@@ -37,8 +37,6 @@ Through building Clackity, I learned more about:
 * Breaking a larger idea into smaller, manageable features
 * Iterating on a project instead of trying to build everything at once
 
-Most importantly, this project helped me appreciate how even a simple application can be improved through small details and thoughtful interactions.
-
 ## 🚀 Future Improvements
 
 There are several features I would like to explore in future versions:
