@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>clackity — a typewriter to-do list</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper: #f2ede1;
+    --paper-shadow: #d8d0bd;
+    --ink: #2a2622;
+    --ink-faded: #6b6357;
+    --ribbon-red: #a13c34;
+    --ribbon-red-dark: #7c2c26;
+    --machine: #3a3632;
+    --machine-dark: #262320;
+    --machine-light: #4a453f;
+    --key: #e7e2d4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: #ded6c2;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(255,255,255,0.15), transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(0,0,0,0.06), transparent 40%);
+    font-family:'Courier Prime', monospace;
+    color:var(--ink);
+    min-height:100vh;
+    display:flex;
+    align-items:flex-start;
+    justify-content:center;
+    padding:32px 16px 64px;
+  }
+  .wrap{width:100%;max-width:460px;}
+  h1{
+    font-family:'Special Elite', cursive;
+    font-size:28px;
+    text-align:center;
+    letter-spacing:1px;
+    margin:0 0 4px;
+    color:var(--ink);
+  }
+  .sub{
+    text-align:center;
+    font-size:12px;
+    color:var(--ink-faded);
+    margin:0 0 20px;
+    letter-spacing:0.5px;
+  }
+  .machine{
+    background:var(--machine);
+    border-radius:16px 16px 6px 6px;
+    padding:16px 16px 0;
+    box-shadow: 0 14px 30px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.08);
+    position:relative;
+  }
+
+  /* ribbon spools sitting behind the roller */
+  .spools{
+    display:flex;
+    justify-content:space-between;
+    padding:0 22px;
+    margin-bottom:-9px;
+  }
+  .spool{
+    width:24px;height:24px;border-radius:50%;
+    background:radial-gradient(circle at 35% 35%, var(--ribbon-red) 0 22%, var(--machine-dark) 24% 60%, var(--ribbon-red-dark) 61% 100%);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05);
+    z-index:3;
+  }
+
+  /* the paper roller bar with knobs at each end */
+  .rollerRow{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    position:relative;
+    z-index:2;
+  }
+  .knob{
+    width:15px;height:26px;flex-shrink:0;
+    background:linear-gradient(180deg,#57514a,#231f1c);
+    border-radius:6px;
+    box-shadow:inset 0 1px 1px rgba(255,255,255,0.15);
+  }
+  .roller{
+    flex:1;
+    height:18px;
+    background:linear-gradient(180deg,var(--machine-light),var(--machine-dark));
+    border-radius:9px;
+  }
+
+  /* paper, with a couple of sheets peeking out behind it for depth */
+  .paperStack{
+    position:relative;
+    margin-top:-2px;
+  }
+  .paperStack::before, .paperStack::after{
+    content:'';
+    position:absolute;
+    left:6px; right:6px;
+    background:var(--paper-shadow);
+    border-radius:2px;
+    z-index:0;
+  }
+  .paperStack::before{ top:6px; bottom:-6px; opacity:.8; }
+  .paperStack::after{ top:3px; bottom:-3px; opacity:.9; left:3px; right:3px; }
+  .paper{
+    background:var(--paper);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.22), inset 0 -34px 40px -32px var(--paper-shadow);
+    border-radius:2px;
+    padding:26px 20px 18px;
+    min-height:220px;
+    position:relative;
+    z-index:1;
+  }
+  .paper::before{
+    content:'';
+    position:absolute;
+    top:0;left:0;right:0;height:10px;
+    background:repeating-linear-gradient(90deg, transparent 0 6px, rgba(0,0,0,0.05) 6px 7px);
+  }
+  .lines{list-style:none;margin:0;padding:0;}
+  .lines li{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    font-size:15px;
+    line-height:1.6;
+    padding:6px 2px;
+    border-bottom:1px dashed rgba(0,0,0,0.12);
+    cursor:pointer;
+    position:relative;
+    transition:opacity .3s ease;
+  }
+  .lines li:last-child{border-bottom:none;}
+  .lines li .bullet{
+    font-family:'Special Elite', cursive;
+    color:var(--ribbon-red);
+    flex-shrink:0;
+  }
+  .lines li .txt{
+    flex:1;
+    position:relative;
+    word-break:break-word;
+  }
+  .lines li.done .txt{color:var(--ink-faded);}
+  .lines li .strike{
+    position:absolute;
+    left:0; top:50%;
+    height:2px;
+    width:0%;
+    background:var(--ribbon-red);
+    transform:translateY(-50%) rotate(-1deg);
+    transition:width .35s cubic-bezier(.65,.05,.36,1);
+  }
+  .lines li.done .strike{width:104%;}
+  .lines li .del{
+    font-size:14px;
+    color:var(--ink-faded);
+    background:none;
+    border:none;
+    cursor:pointer;
+    flex-shrink:0;
+    padding:0 2px;
+  }
+  .empty{
+    font-size:13px;
+    color:var(--ink-faded);
+    font-style:italic;
+    padding:8px 2px;
+  }
+
+  /* carriage / typing slot */
+  .inputRow{
+    display:flex;
+    align-items:center;
+    background:var(--key);
+    border-radius:8px;
+    margin-top:14px;
+    padding:4px 4px 4px 12px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+    position:relative;
+    z-index:1;
+  }
+  .inputRow input{
+    flex:1;
+    border:none;
+    background:transparent;
+    font-family:'Courier Prime', monospace;
+    font-size:15px;
+    padding:10px 6px;
+    color:var(--ink);
+    outline:none;
+  }
+  .inputRow input::placeholder{color:var(--ink-faded);}
+  .inputRow button{
+    font-family:'Special Elite', cursive;
+    background:var(--ribbon-red);
+    color:#f2ede1;
+    border:none;
+    border-radius:6px;
+    padding:9px 14px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .inputRow button:active{background:var(--ribbon-red-dark);}
+
+  /* decorative keyboard */
+  .keyboard{
+    margin-top:16px;
+    padding:14px 8px 18px;
+    background:linear-gradient(180deg, var(--machine), #2e2b28);
+    border-radius:0 0 12px 12px;
+    box-shadow: inset 0 6px 10px -6px rgba(0,0,0,0.5);
+  }
+  .keyRow{
+    display:flex;
+    justify-content:center;
+    gap:5px;
+    margin-bottom:6px;
+  }
+  .key{
+    width:27px;height:27px;
+    border-radius:50%;
+    background:linear-gradient(180deg,#544f47,#2a2622);
+    color:#e7e2d4;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Special Elite', cursive;
+    font-size:11px;
+    box-shadow:0 3px 0 rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.15);
+    transition:transform .07s ease, box-shadow .07s ease;
+    user-select:none;
+  }
+  .key.pressed{
+    transform:translateY(3px);
+    box-shadow:0 0 0 rgba(0,0,0,0.45), inset 0 1px 3px rgba(0,0,0,0.5);
+    background:linear-gradient(180deg,#6a6359,#3a352f);
+  }
+  .spacebarRow{display:flex;justify-content:center;margin-top:2px;}
+  .spacebar{
+    width:150px;height:22px;
+    border-radius:11px;
+    background:linear-gradient(180deg,#544f47,#2a2622);
+    box-shadow:0 3px 0 rgba(0,0,0,0.45), inset 0 1px 1px rgba(255,255,255,0.15);
+    transition:transform .07s ease, box-shadow .07s ease;
+  }
+  .spacebar.pressed{
+    transform:translateY(3px);
+    box-shadow:0 0 0 rgba(0,0,0,0.45), inset 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  .hint{
+    text-align:center;
+    font-size:11px;
+    color:#8a8272;
+    margin-top:12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>clackity</h1>
+  <p class="sub">type it. tap it. cross it off.</p>
+
+  <div class="machine">
+    <div class="spools"><div class="spool"></div><div class="spool"></div></div>
+    <div class="rollerRow">
+      <div class="knob"></div>
+      <div class="roller"></div>
+      <div class="knob"></div>
+    </div>
+    <div class="paperStack">
+      <div class="paper">
+        <ul class="lines" id="lines"></ul>
+        <p class="empty" id="emptyMsg" style="display:none;">the page is blank — type something below</p>
+      </div>
+    </div>
+    <div class="inputRow">
+      <input id="todoInput" type="text" placeholder="write a to-do and press enter…" maxlength="140">
+      <button id="addBtn">type ⏎</button>
+    </div>
+    <div class="keyboard" id="keyboard">
+      <div class="keyRow" data-row="0"></div>
+      <div class="keyRow" data-row="1"></div>
+      <div class="keyRow" data-row="2"></div>
+      <div class="spacebarRow"><div class="spacebar" id="spacebar"></div></div>
+    </div>
+  </div>
+  <p class="hint">tap a line to cross it out</p>
+</div>
+
+<script>
+const STORAGE_KEY = 'clackity-todos';
+let todos = [];
+
+async function load(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY);
+    todos = res ? JSON.parse(res.value) : [];
+  }catch(e){ todos = []; }
+  render();
+}
+async function save(){
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(todos)); }
+  catch(e){ console.error('storage failed', e); }
+}
+
+function render(){
+  const list = document.getElementById('lines');
+  const empty = document.getElementById('emptyMsg');
+  list.innerHTML = '';
+  if(todos.length === 0){ empty.style.display='block'; return; }
+  empty.style.display='none';
+  todos.forEach((t, i) => {
+    const li = document.createElement('li');
+    li.className = t.done ? 'done' : '';
+    li.innerHTML = `
+      <span class="bullet">—</span>
+      <span class="txt">${escapeHtml(t.text)}<span class="strike"></span></span>
+      <button class="del" title="Delete" data-i="${i}">✕</button>
+    `;
+    li.querySelector('.txt').addEventListener('click', () => toggle(i));
+    li.querySelector('.del').addEventListener('click', (e) => { e.stopPropagation(); remove(i); });
+    list.appendChild(li);
+  });
+}
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.innerText = s;
+  return d.innerHTML;
+}
+
+function toggle(i){
+  todos[i].done = !todos[i].done;
+  render();
+  save();
+}
+function remove(i){
+  todos.splice(i,1);
+  render();
+  save();
+}
+function addTodo(text){
+  const trimmed = text.trim();
+  if(!trimmed) return;
+  todos.unshift({text: trimmed, done:false});
+  render();
+  save();
+}
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const input = document.getElementById('todoInput');
+  addTodo(input.value);
+  input.value = '';
+  input.focus();
+});
+document.getElementById('todoInput').addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){
+    addTodo(e.target.value);
+    e.target.value = '';
+  }
+});
+
+/* --- decorative keyboard: build keys + animate on typing --- */
+const rows = ['qwertyuiop','asdfghjkl','zxcvbnm'];
+const keyEls = {};
+rows.forEach((row, r) => {
+  const rowEl = document.querySelector(`.keyRow[data-row="${r}"]`);
+  row.split('').forEach(ch => {
+    const k = document.createElement('div');
+    k.className = 'key';
+    k.textContent = ch;
+    rowEl.appendChild(k);
+    keyEls[ch] = k;
+  });
+});
+const spacebarEl = document.getElementById('spacebar');
+
+function flashKey(ch){
+  const lower = ch.toLowerCase();
+  let el = null;
+  if(lower === ' '){ el = spacebarEl; }
+  else if(keyEls[lower]){ el = keyEls[lower]; }
+  if(!el) return;
+  el.classList.add('pressed');
+  setTimeout(() => el.classList.remove('pressed'), 110);
+}
+
+document.getElementById('todoInput').addEventListener('keydown', (e) => {
+  if(e.key.length === 1){ flashKey(e.key); }
+  else if(e.key === 'Enter'){ flashKey(' '); }
+});
+
+load();
+</script>
+</body>
+</html>
