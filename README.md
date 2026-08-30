@@ -41,12 +41,10 @@ Through building Clackity, I learned more about:
 
 There are several features I would like to explore in future versions:
 
-* 🔔 **Task reminders** — remind users about unfinished tasks
 * 📅 **Task dates** — record when each task was created
 * ⏰ **Two-day reminder system** — if a task remains incomplete for more than two days, the system could remind the user to work on it
 * 💾 **Persistent storage** — save tasks so they remain after closing or refreshing the page
 * ✏️ **Edit tasks** — allow users to modify existing tasks
-* 🗑️ **Delete tasks** — remove tasks that are no longer needed
 * 📱 **Responsive design** — improve the experience across different screen sizes
 
 ## 💭 Project Idea
